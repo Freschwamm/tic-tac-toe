@@ -1,133 +1,177 @@
 function Gameboard() {
-    const rows = 3;
-    const columns = 3;
-    let tileNumber = 1;
-    const board = [];
-  
-    for (let i = 0; i < rows; i++) {
-      board[i] = [];
-      for (let j = 0; j < columns; j++) {
-        board[i][j] = Tile(tileNumber);
-        tileNumber++
-      }
-    }
-    const selectTile = (chosenTile, playerValue) => {
-        let continueGame = true;
-        for (let i = 0; i < rows; i++) {
-            const tileIndex = board[i].findIndex(tile => tile.getValue() === chosenTile);
-            if (tileIndex !== -1) {
-                board[i][tileIndex].setValue(playerValue);
-                return continueGame;
-            }
-            if(rows.length - 1 === i) {
-                console.log(`Tile ${chosenTile} already taken`)
-                continueGame = false
-                return continueGame
-            }
-        }
-    };
+	const rows = 3;
+	const columns = 3;
+	let tileNumber = 1;
+	let board = [];
 
-    const checkResult = (playerToken) => {
-        const winningPositions = [
-            [0, 1, 2],
-            [3, 4, 5],
-            [6, 7, 8],
-            [0, 3, 6],
-            [1, 4, 7],
-            [2, 5, 8],
-            [0, 4, 8],
-            [2, 4, 6]
-        ]
-        // Convert the board to a 1D array for easy indexing
-        const flatBoard = board.flat().map(tile => tile.getValue());
-        // Check if any of the winning positions contain all the same player token
-        for (const positions of winningPositions) {
-            const [a, b, c] = positions;
+	for (let i = 0; i < rows; i++) {
+		board[i] = [];
+		for (let j = 0; j < columns; j++) {
+			board[i][j] = Tile(tileNumber);
+			tileNumber++;
+		}
+	}
+	const selectTile = (chosenTile, playerValue) => {
+		let continueGame = true;
+		for (let i = 0; i < rows; i++) {
+			const tileIndex = board[i].findIndex(
+				(tile) => tile.getValue() === parseInt(chosenTile)
+			);
+			if (tileIndex !== -1) {
+				board[i][tileIndex].setValue(playerValue);
+				return continueGame;
+			}
+			if (rows.length - 1 === i) {
+				continueGame = false;
+				return continueGame;
+			}
+		}
+	};
 
-            if (flatBoard[a] === playerToken && 
-                flatBoard[b] === playerToken && 
-                flatBoard[c] === playerToken) {
-                
-                console.log(`Player ${playerToken} wins!`);
-                return true; // Winner found
-            }
-        }
+	const checkResult = (playerToken) => {
+		const winningPositions = [
+			[0, 1, 2],
+			[3, 4, 5],
+			[6, 7, 8],
+			[0, 3, 6],
+			[1, 4, 7],
+			[2, 5, 8],
+			[0, 4, 8],
+			[2, 4, 6],
+		];
+		const flatBoard = board.flat().map((tile) => tile.getValue());
+		for (const positions of winningPositions) {
+			const [a, b, c] = positions;
+			if (
+				flatBoard[a] === playerToken &&
+				flatBoard[b] === playerToken &&
+				flatBoard[c] === playerToken
+			) {
+				return true;
+			}
+		}
+		return false;
+	};
 
-        return false; // No winner yet
-    }
+	const resetBoard = () => {
+		board = [];
+		tileNumber = 1;
+		for (let i = 0; i < rows; i++) {
+			board[i] = [];
+			for (let j = 0; j < columns; j++) {
+				board[i][j] = Tile(tileNumber);
+				tileNumber++;
+			}
+		}
+	};
 
-    const showBoard = () => {
-        const boardWithCellValues = board.map((row) => row.map((tile) => tile.getValue()))
-        console.log('update board', boardWithCellValues);
-      };
-
-    return { board, selectTile, showBoard, checkResult }
+	const getBoard = () => board;
+	return { selectTile, checkResult, getBoard, resetBoard };
 }
-
 
 function Tile(tileValue) {
-    let value = tileValue
+	let value = tileValue;
 
-    const getValue = () => {
-        return value
-    }
+	const getValue = () => {
+		return value;
+	};
 
-    const setValue = (playerToken) => {
-        value = playerToken
-    }
+	const setValue = (playerToken) => {
+		value = playerToken;
+	};
 
-    return { getValue, setValue }
+	return { getValue, setValue };
 }
 
+function GameController(
+	playerOneName = 'Player One',
+	playerTwoName = 'Player Two'
+) {
+	const players = [
+		{
+			name: playerOneName,
+			token: 'X',
+		},
+		{
+			name: playerTwoName,
+			token: 'O',
+		},
+	];
+	const board = Gameboard();
+	let activePlayer = players[0];
+	const getActivePlayer = () => activePlayer;
+	const switchActivePlayer = () => {
+		[activePlayer] = players.filter(
+			(player) => !Object.is(activePlayer, player)
+		);
+	};
 
-function GameController( playerOneName = "Player One", playerTwoName = "Player Two") {
-    const players = [
-        {
-            name: playerOneName,
-            token: "X"
-        },
-        {
-            name: playerTwoName,
-            token: "O"
-        }
-    ]
-    const board = Gameboard()
-        let activePlayer = players[0]
-        const switchActivePlayer = () => {
-            [activePlayer] = players.filter(player => !Object.is(activePlayer, player))
-            board.showBoard()
-            console.log(`It is ${activePlayer.name}'s turn`)
-    }
+	const checkResult = () => {
+		const result = board.checkResult(activePlayer.token);
+		return result;
+	};
 
-    const checkResult = (playerToken) => {
-        console.log('checking result')
-       board.checkResult(playerToken)
+	const restartGame = () => {
+		board.resetBoard();
+		activePlayer = players[0];
+	};
 
-    }
-    let numberOfTurns = 1;
+	const playRound = (tile) => {
+		board.selectTile(tile, activePlayer.token);
+		if (checkResult()) return;
+		switchActivePlayer();
+	};
 
-    const playRound = (tile) => {
-        const continueGame = board.selectTile(tile, activePlayer.token)
-        if(numberOfTurns > 0) checkResult(activePlayer.token)
-        if(!continueGame) {
-            board.showBoard()
-            console.log('Pick another tile')
-            return
-        } else {
-            switchActivePlayer()
-            numberOfTurns++
-        }
-    }
-    console.log("Place Token by choosing tile number")
-    board.showBoard()
-    console.log(`It is ${activePlayer.name}'s turn`)
-
-    return { playRound }
+	return {
+		playRound,
+		getBoard: board.getBoard,
+		getActivePlayer,
+		checkResult,
+		restartGame,
+	};
 }
 
-const game = GameController()
+function displayController() {
+	const game = GameController();
+	const playerTurnDiv = document.querySelector('.player');
+	const boardDiv = document.querySelector('.board');
+	const resetButton = document.querySelector('.reset');
 
+	const updateScreen = () => {
+		boardDiv.textContent = '';
+		const board = game.getBoard();
+		const activePlayer = game.getActivePlayer();
+		playerTurnDiv.textContent = `${activePlayer.name}'s turn...`;
+		board.forEach((row) => {
+			row.forEach((tile) => {
+				const tileButton = document.createElement('button');
+				tileButton.dataset.tile = tile.getValue();
+				tileButton.textContent = tile.getValue();
+				boardDiv.appendChild(tileButton);
+			});
+		});
+	};
 
+	function clickHandlerBoard(e) {
+		const selectedTile = e.target.dataset.tile;
+		if (!selectedTile) return;
+		game.playRound(selectedTile);
+		const result = game.checkResult();
+		const activePlayer = game.getActivePlayer();
+		updateScreen();
+		if (result) {
+			playerTurnDiv.textContent = `${activePlayer.name} wins`;
+			return;
+		}
+	}
 
+	resetButton.addEventListener('click', () => {
+		game.restartGame();
+		updateScreen();
+	});
 
+	boardDiv.addEventListener('click', clickHandlerBoard);
+	updateScreen();
+}
 
+displayController();
